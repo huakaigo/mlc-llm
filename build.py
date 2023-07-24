@@ -11,7 +11,7 @@ from tvm import relax
 
 import mlc_llm
 from mlc_llm import utils
-from mlc_llm.relax_model import gpt_bigcode, gpt_neox, llama, moss, rwkv
+from mlc_llm.relax_model import gpt_bigcode, gpt_neox, llama, moss, rwkv, bloom
 
 
 def _parse_args():
@@ -296,6 +296,7 @@ def mod_transform_before_build(
     # Reassign `args.quantization` for compatibility of the old/new quantization framework.
     # This will be cleaned after all model architecture transitioning to the new framework.
     args.quantization = utils.quantization_dict[args.quantization.name]
+    print("begin quantization")
     if args.quantization.mode != "no":
         if ARGS.model.startswith("rwkv-"):
             mod = mlc_llm.transform.RWKVQuantize(  # pylint: disable=not-callable
@@ -310,6 +311,8 @@ def mod_transform_before_build(
                 storage_nbit=args.quantization.storage_nbit,
                 dtype=args.quantization.model_dtype,
             )(mod)
+    print("end quantization")
+
     mod = mlc_llm.transform.FuseDecodeTranspose()(mod)  # pylint: disable=not-callable
     mod = mlc_llm.transform.FuseTransposeMatmul()(mod)  # pylint: disable=not-callable
     mod = relax.pipeline.get_pipeline()(mod)  # pylint: disable=no-value-for-parameter
@@ -430,6 +433,8 @@ def main():
                 mod, params = moss.get_model(ARGS, config)
             elif ARGS.model_category == "rwkv":
                 mod, params = rwkv.get_model(ARGS, config)
+            elif ARGS.model_category == "bloom":
+                mod, params = bloom.get_model(ARGS, config)
             else:
                 raise ValueError(f"Model {ARGS.model} not supported")
             mod = mod_transform_before_build(mod, params, ARGS)

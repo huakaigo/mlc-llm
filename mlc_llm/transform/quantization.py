@@ -317,6 +317,7 @@ class GroupQuantize:
 
             def transform(self) -> IRModule:
                 for global_var, func in self.mod.functions.items():
+                    print(f"11 global_var: {global_var}, func attr: {func.attrs}")
                     if not isinstance(func, relax.Function):
                         continue
                     if func.attrs is None or not "num_input" in func.attrs:
@@ -324,6 +325,7 @@ class GroupQuantize:
                     num_inputs = func.attrs["num_input"]
                     for i in range(int(num_inputs), len(func.params)):
                         self._params.add(func.params[i])
+                    print(f"global_var: {global_var}")
                     updated_func = self.visit_expr(func)
                     updated_func = remove_all_unused(updated_func)
                     self.builder_.update_func(global_var, updated_func)
@@ -391,6 +393,15 @@ class GroupQuantize:
                         quantized_permute_dims = self.builder_.emit(
                             relax.op.permute_dims(quantized_permute_dims)
                         )
+                    print(call_arg)
+                    print(x)
+                    print(x.struct_info)
+                    print(x.struct_info.shape)
+                    print(call_arg.op)
+                    print(transpose_output)
+                    print(decode_args)
+                    print(quantized_permute_dims)
+                    exit(1)
                     return relax.op.matmul(
                         call.args[0],
                         quantized_permute_dims,
@@ -424,6 +435,7 @@ class GroupQuantize:
                 )
 
             def visit_call_(self, call):
+                print(call)
                 call = self.visit_expr_post_order(call)
 
                 if call.op == tvm.ir.Op.get("relax.matmul"):

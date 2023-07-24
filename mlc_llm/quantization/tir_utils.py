@@ -10,6 +10,7 @@ def _tir_f32x2_to_bf16x2_to_u32(v0: tir.PrimExpr, v1: tir.PrimExpr, round_to_eve
     for data in [v0, v1]:
         u32_val = tir.reinterpret("uint32", data)
         if round_to_even:
+            # 操作符优先级: '+' > '>>' > '&'
             rounding_bias = ((u32_val >> tir.const(16, "uint32")) & tir.const(1, "uint32")) + tir.const(0x7FFF, "uint32")
             u32_val += rounding_bias
         res.append((u32_val >> tir.const(16, "uint32")) & mask)

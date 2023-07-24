@@ -35,6 +35,17 @@ public class ChatModule {
 
     public void reload(String modelLib, String modelPath) {
         String libPrefix = modelLib.replace('-', '_') + "_";
+        // String fullLibName = modelPath + "/" + modelLib + "-android.tar";
+        // System.out.printf("FullLibName = %s\n", fullLibName);
+        // try {
+        //     Module.load(fullLibName);
+        //     System.out.printf("Module.load [%s] successed!\n", fullLibName);
+        // }
+        // catch (Exception e) {
+        //     System.out.printf("Module.load [%s] failed!\n", fullLibName);
+        //     e.printStackTrace();
+        // }
+
         Function systemLibFunc = Function.getFunction("runtime.SystemLib");
         assert systemLibFunc != null;
         systemLibFunc = systemLibFunc.pushArg(libPrefix);

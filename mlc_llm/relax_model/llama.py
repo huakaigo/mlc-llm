@@ -640,6 +640,7 @@ def create_encoding_func(
     seq_len = tvm.tir.Var("n", "int64")
     all_seq_len = tvm.tir.Var("m", "int64")
     hidden_size = config.hidden_size
+    print(f"prefill in")
     with bb.function(func_name):
         model = LlamaForCausalLM(config, sep_embed)
         param_manager.register_params(
@@ -675,7 +676,9 @@ def create_encoding_func(
         bb.emit_func_output(gv, params)
 
     mod = bb.get()
+    # print(mod)
     gv = mod.get_global_var(func_name)
+    # print(gv)
     bb.update_func(gv, mod[gv].with_attr("num_input", 3))
 
 
@@ -811,6 +814,11 @@ def get_model(args, hf_config):
                 )
 
         mod, pidx2pname = param_manager.quantization_transform(mod)
+        # print("================================================")
+        # for pname in pidx2pname.values():
+        #     print(f"{pname}")
+        # print("================================================")
+        # exit(0)
         pname2binname = load_torch_pname2binname_map(
             model_path,
             set(pidx2pname.values()),

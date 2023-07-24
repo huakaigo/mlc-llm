@@ -26,9 +26,20 @@
 #include <random>
 #include <string>
 #include <unordered_set>
+#include <typeinfo>
 
 #include "conversation.h"
 
+#if __ANDROID__
+#include <android/log.h>
+#define LOG_TAG "DEBUG"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#define DEBUG() LOGI("Native C++: %s-%s:%d\n", __FILE__, __FUNCTION__, __LINE__)
+#else
+#define DEBUG() printf("Native C++: %s-%s:%d\n", __FILE__, __FUNCTION__, __LINE__)
+#define LOGI(...) printf(__VA_ARGS__)
+#endif
 namespace mlc {
 namespace llm {
 
@@ -236,12 +247,19 @@ class LLMChat {
    */
   void Reload(tvm::runtime::Module executable, String model_path, String app_config_json = "") {
     // Step 1. Set tokenizer.
+    DEBUG();
     this->tokenizer_ = TokenizerFromPath(model_path);
+    DEBUG();
 
     // Step 2. Initialize vm, we use the packed function mechanism
     // so there is no explicit abi dependency on these extra
     // classes other than basic tvm runtime.
+    DEBUG();
+    const std::type_info& c_type = typeid(executable);
+    LOGI("executable = %s\n", c_type.name());
     auto fload_exec = executable->GetFunction("vm_load_executable");
+    LOGI("fload_exec.defined = %d\n", fload_exec.defined());
+    DEBUG();
     ICHECK(fload_exec.defined()) << "TVM runtime cannot find vm_load_executable";
     vm_ = fload_exec();
     vm_->GetFunction("vm_initialization")(static_cast<int>(device_.device_type), device_.device_id,
@@ -955,23 +973,35 @@ class LLMChatModule : public ModuleNode {
   // clear global memory manager
   static void ClearGlobalMemoryManager() {
     // Step 0. Clear the previously allocated memory.
+    DEBUG();
     const PackedFunc* fclear_memory_manager =
         tvm::runtime::Registry::Get("vm.builtin.memory_manager.clear");
+    DEBUG();
+    LOGI("fclear_memory_manager = %p\n", fclear_memory_manager);
     ICHECK(fclear_memory_manager) << "Cannot find env function vm.builtin.memory_manager.clear";
+    DEBUG();
     (*fclear_memory_manager)();
   }
 
   // overrides
   PackedFunc GetFunction(const String& name, const ObjectPtr<Object>& sptr_to_self) final {
+    DEBUG();
     if (name == "reload") {
       return PackedFunc([this, sptr_to_self](TVMArgs args, TVMRetValue* rv) {
+        LOGI("Native C++: MLC_CHAT GetFunction reload");
         chat_ = nullptr;
         ClearGlobalMemoryManager();
         chat_ = std::make_unique<LLMChat>(LLMChat(device_));
+        LOGI("mlc.chat GetFunction arg[0] tp = %d, arg[1] tp = %d\n", args[0].type_code(),
+             args[1].type_code());
         if (args.size() == 2) {
+          DEBUG();
           chat_->Reload(args[0], args[1]);
+          DEBUG();
         } else if (args.size() == 3) {
+          DEBUG();
           chat_->Reload(args[0], args[1], args[2]);
+          DEBUG();
         } else {
           LOG(FATAL) << "Invalid number of arguments for reload function";
         }
@@ -1123,6 +1153,7 @@ tvm::runtime::Module CreateChatModule(DLDevice device) {
 
 // register as a system function that can be queried
 TVM_REGISTER_GLOBAL("mlc.llm_chat_create").set_body_typed([](int device_type, int device_id) {
+  LOGI("device_type = %d, device_id = %d\n", device_type, device_id);
   return CreateChatModule(DLDevice{static_cast<DLDeviceType>(device_type), device_id});
 });
 

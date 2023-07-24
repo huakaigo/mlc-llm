@@ -55,7 +55,7 @@ quantization_dict = {
     ),
 }
 
-supported_model_types = set(["llama", "gpt_neox", "gpt_bigcode", "moss", "rwkv"])
+supported_model_types = set(["llama", "gpt_neox", "gpt_bigcode", "moss", "rwkv", "bloom"])
 
 
 def argparse_postproc_common(args: argparse.Namespace) -> None:
@@ -83,7 +83,8 @@ def argparse_postproc_common(args: argparse.Namespace) -> None:
         "guanaco": ("guanaco", "llama"),
         "starcoder": ("code_gpt", "gpt_bigcode"),
         "wizardcoder-": ("code_gpt", "gpt_bigcode"),
-        "gpt_bigcode-santacoder": ("code_gpt", "gpt_bigcode")
+        "gpt_bigcode-santacoder": ("code_gpt", "gpt_bigcode"),
+        "bloom": ("bloom", "bloom") # TODO bloom not supported in conv_templates.cc yet
     }
     model = args.model.lower()
     for prefix, (conv_template, model_category) in supported_model_prefix.items():
@@ -197,8 +198,10 @@ def transform_params(
 
     transform_func_name = None
     for gv, func in mod_transform.functions.items():
+        print(f"quantization gv: {gv}, attrs: {func.attrs}")
         if isinstance(func, relax.Function):
             transform_func_name = gv.name_hint
+    print(f"transform_func_name: {transform_func_name}")
     assert transform_func_name is not None
 
     target = detect_local_target()
@@ -206,6 +209,9 @@ def transform_params(
     device = tvm.device(target.kind.default_keys[0])
     device_cpu = tvm.cpu()
     loaded_params_dict: Dict[int, tvm.nd.NDArray] = {}
+    print("================================================")
+    # for key in model_params.keys():
+    #     print(f"model_param key: {key}")
 
     @tvm.register_func("get_item", override=True)
     def get_item(i):
@@ -244,13 +250,23 @@ def transform_params(
                 for param_name, param in f_convert_param_bkwd(
                     torch_param_name, raw_param
                 ):
+                    print(f"try to find {param_name}")
                     if param_name in pname2pidx.keys():
                         assert pname2pidx[param_name] not in loaded_params_dict
                         loaded_params_dict[pname2pidx[param_name]] = tvm.nd.array(
                             param, device_cpu
                         )
                 del raw_param
-
+        if i not in loaded_params_dict:
+            with open("debug.txt", 'wt') as f:
+                f.write(f"i = {i}\n")
+                f.write(f"pname = {pname}\n")
+                f.write(f"torch_pname = {torch_pname}\n")
+                f.write(f"pname2binname[torch_pname] = {pname2binname[torch_pname]}\n")
+            print(f"i = {i}")
+            print(f"pname = {pname}")
+            print(f"torch_pname = {torch_pname}")
+            print(f"pname2binname[torch_pname] = {pname2binname[torch_pname]}")
         assert i in loaded_params_dict
         assert i not in loaded_idx_set
         param_on_device = tvm.nd.array(loaded_params_dict[i], device=device)
@@ -270,6 +286,8 @@ def transform_params(
         with tvm.target.Target(target):
             mod_transform = tvm.tir.transform.DefaultGPUSchedule()(mod_transform)
 
+    # print(f"{mod_transform}")
+    # exit(0)
     ex = relax.build(mod_transform, target=target)
     vm = relax.vm.VirtualMachine(ex, device)
     print("Start computing and quantizing weights... This may take a while.")

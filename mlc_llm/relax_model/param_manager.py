@@ -4,6 +4,7 @@ import tvm
 from tvm import relax, tir
 from tvm.relax.expr import Expr, Function, Var
 from tvm.relax.testing import nn
+from tvm.relax.testing.nn import Parameter
 from tvm.relax.analysis import remove_all_unused
 from tvm.relax.expr_functor import PyExprMutator, mutator
 
@@ -135,6 +136,8 @@ class ParamManager:
         # register the parameter with its name and quantization kind.
         for name, param in named_parameters(model).items():
             quant_kind = f_get_param_quant_kind(name, param.struct_info)
+            # print(f"{name}: {param} {param.struct_info} {quant_kind}")
+            # print(f"param.data = {param.data}")
             getattr(quantization_scheme, quant_kind.name)
             self.register_param(
                 name, param, getattr(quantization_scheme, quant_kind.name), func_name
@@ -176,6 +179,8 @@ class ParamManager:
         # store the mapping from function name to the var.
         func2param_var: Dict[str, relax.Var] = {}
         for gv, func in mod.functions.items():
+            # print(f"gv: {gv}")
+            # print(f"attrs: {func.attrs}")
             if not isinstance(func, relax.Function):
                 continue
             if func.attrs is None or not "num_input" in func.attrs:
@@ -183,7 +188,8 @@ class ParamManager:
             func2param_var[gv.name_hint] = relax.Var(
                 "params", mod_transform["transform_params"].struct_info.ret
             )
-
+        # print(mod_transform["transform_params"].struct_info.ret)
+        # exit(0)
         # Define a var replacement function for applying dequantization.
         def f_replace(var: relax.Var, bb: relax.BlockBuilder) -> relax.Var:
             assert var in self.func_raw_param_map
@@ -300,6 +306,7 @@ class ParamManager:
             loaded_tensor_info = param.quant_spec.get_loaded_tensor_info(
                 param.param_info
             )
+
             loaded_tensor_ranges.append(
                 range(
                     len(input_tensor_info),
@@ -368,11 +375,20 @@ class ParamManager:
                                 len(quantized_params), len(quantized_params) + 1
                             )
                             quantized_params.append(quantized_data)
+                        # print("=======")
+                        # print(quantized_data)
+                        # print(quantized_data.struct_info)
+                        # print(quantized_params)
+                        # exit(0)
 
                 output = bb.emit_output(relax.Tuple(quantized_params))
             bb.emit_func_output(output)
 
         # Return the created IRModule.
+        # mod = bb.get()
+        # print("================================")
+        # print(f"{mod['transform_params']}")
+        # exit(0)
         return bb.get()
 
     def dequantize(

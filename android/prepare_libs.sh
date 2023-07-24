@@ -27,4 +27,4 @@ cmake .. \
 
 make tvm4j_runtime_packed -j8
 cmake --build . --target install --config release -j
-
+ cp -f ./build/output/arm64-v8a/libtvm4j_runtime_packed.so ./MLCChat/app/src/main/libs/arm64-v8a/libtvm4j_runtime_packed.s

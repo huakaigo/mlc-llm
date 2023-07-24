@@ -2,7 +2,9 @@ package ai.mlc.mlcchat
 
 import ai.mlc.mlcllm.ChatModule
 import android.app.Application
+import android.content.Context
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
@@ -13,10 +15,12 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.URL
 import java.nio.channels.Channels
 import java.util.UUID
 import java.util.concurrent.Executors
+import java.util.zip.GZIPInputStream
 import kotlin.concurrent.thread
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -590,7 +594,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     Toast.makeText(application, "Initialize...", Toast.LENGTH_SHORT).show()
                 }
                 backend.unload()
+                Log.i("DEBUG", "Android: reload begin")
+                Log.i("DEBUG", "Android: modelName=$modelName")
+                Log.i("DEBUG", "Android: modelPath=$modelPath")
+                Log.i("DEBUG", "Android: modelLib=$modelLib")
                 backend.reload(modelLib, modelPath)
+                Log.i("DEBUG", "Android: reload end")
                 viewModelScope.launch {
                     Toast.makeText(application, "Ready to chat", Toast.LENGTH_SHORT).show()
                     switchToReady()

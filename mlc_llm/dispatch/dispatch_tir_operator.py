@@ -18,6 +18,9 @@ class DispatchTIROperator:  # pylint: disable=too-few-public-methods
 
         elif model == "rwkv":
             lookup = None
+        
+        elif model == "bloom":
+            lookup = None
 
         else:
             raise ValueError(f"Model {model} not supported")
