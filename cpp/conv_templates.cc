@@ -405,6 +405,27 @@ Conversation WizardLM() {
   return conv;
 }
 
+Conversation Bloom() {
+  Conversation conv;
+  conv.name = "bloom";
+  conv.system =
+      ("A chat between a curious user and an artificial intelligence assistant. "
+       "The assistant gives helpful, detailed, and polite answers to the user's questions.");
+  conv.roles = {"USER", "ASSISTANT"};
+  conv.messages = {};
+  conv.offset = 0;
+  conv.separator_style = SeparatorStyle::kSepRoleMsg;
+  conv.seps = {" ", "</s>"};
+  conv.role_msg_sep = ": ";
+  conv.role_empty_sep = ":";
+  // TODO(mlc-team): add eos to mlc-chat-config
+  // and remove eos from stop token setting.
+  conv.stop_tokens = {2};
+  conv.stop_str = "</s>";
+  conv.add_bos = true;
+  return conv;
+}
+
 }  // namespace
 
 using ConvFactory = Conversation (*)();
@@ -427,6 +448,7 @@ Conversation Conversation::FromTemplate(const std::string& name) {
       {"LM", VanillaLM},
       {"code_gpt", CodeGPT},
       {"wizardlm", WizardLM},
+      {"bloom", Bloom},
   };
   auto it = factory.find(name);
   if (it == factory.end()) {

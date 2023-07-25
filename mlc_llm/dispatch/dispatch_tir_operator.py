@@ -25,6 +25,10 @@ class DispatchTIROperator:  # pylint: disable=too-few-public-methods
         elif model == "gptj":
             lookup = None
 
+        elif model == "bloom":
+            # TODO: support bloom
+            lookup = None
+
         else:
             raise ValueError(f"Model {model} not supported")
         self.lookup = lookup

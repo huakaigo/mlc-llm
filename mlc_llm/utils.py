@@ -14,7 +14,7 @@ from .relax_model import param_manager
 
 
 supported_model_types = set(
-    ["llama", "gpt_neox", "gpt_bigcode", "minigpt", "moss", "rwkv", "gptj"]
+    ["llama", "gpt_neox", "gpt_bigcode", "minigpt", "moss", "rwkv", "gptj", "bloom"]
 )
 
 
@@ -71,6 +71,7 @@ def argparse_postproc_common(args: argparse.Namespace) -> None:
         "wizardcoder-": "code_gpt",
         "wizardlm-": "wizardlm",
         "gpt_bigcode-santacoder": "code_gpt",
+        "bloom": "bloom",
     }
 
     for prefix, conv_template in model_conv_templates.items():
