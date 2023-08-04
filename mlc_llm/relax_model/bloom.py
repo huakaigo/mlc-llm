@@ -316,7 +316,6 @@ class BloomAttention(nn.Module):
 
         return q_tensor, k_tensor, v_tensor
 
-
     def forward(
         self,
         hidden_states: relax.Expr,
@@ -568,10 +567,8 @@ class BloomEmbedTokensWrapper(nn.Module):
 
 class BloomModel(nn.Module):
     def __init__(self, config: BloomConfig, sep_embed: bool = False):
-        # TODO: no padding_idx in config.json
-        self.padding_idx = 3
+        self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
-        self.embed_tokens = None
         self.embed_dim = config.hidden_size
         self.num_heads = config.n_head
         self.dtype = config.dtype

@@ -342,7 +342,8 @@ def mod_transform_before_build(
         if args.sep_embed:
             model_names = ["embed", "prefill_with_embed"] + model_names[1:]
     assert "transform_params" in [gv.name_hint for gv in mod.get_global_vars()]
-
+    # with open("llama.mod.script", 'wt') as f:
+    #     f.write(mod.script())
     mod = mlc_llm.transform.FuseDecodeTranspose()(mod)  # pylint: disable=not-callable
     mod = mlc_llm.transform.FuseTransposeMatmul()(mod)  # pylint: disable=not-callable
     mod = relax.pipeline.get_pipeline()(mod)  # pylint: disable=no-value-for-parameter
@@ -356,7 +357,6 @@ def mod_transform_before_build(
 
     debug_dump_script(mod_transform, "mod_lift_params.py", args)
     debug_dump_script(mod_deploy, "mod_deploy.py", args)
-
     new_params = utils.transform_params(mod_transform, param_manager, model_params)
     utils.save_params(new_params, args.artifact_path)
     return mod_deploy
@@ -410,9 +410,13 @@ def build(mod_deploy: tvm.IRModule, args: argparse.Namespace) -> None:
         )
         with db, dispatch_target:
             if args.target_kind == "android":
+                # with open('wksp/llama_android_opt/mod.before.lookup.py', 'wt') as f:
+                #     f.write(mod_deploy.script(show_meta=True))
                 mod_deploy = mlc_llm.dispatch.DispatchTIROperatorAdreno()(  # pylint: disable=not-callable
                     mod_deploy
                 )
+                # with open('wksp/llama_android_opt/mod.after.lookup.py', 'wt') as f:
+                #     f.write(mod_deploy.script(show_meta=True))
             mod_deploy = relax.transform.MetaScheduleApplyDatabase()(mod_deploy)
             mod_deploy = dl.ApplyDefaultSchedule(dl.gpu.Matmul())(mod_deploy)
             mod_deploy = dl.ApplyDefaultSchedule(dl.gpu.DecodeGEMV())(mod_deploy)

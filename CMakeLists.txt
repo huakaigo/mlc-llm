@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
+set(CMAKE_C_COMPILER /usr/bin/gcc-9)
+set(CMAKE_CXX_COMPILER /usr/bin/g++-9)
 project(mlc_llm C CXX)
 
 include(CheckCXXCompilerFlag)

@@ -40,6 +40,7 @@ class LlamaConfig:
         self.dtype = dtype
         self.max_sequence_length = max_sequence_length
         self.vocab_size = vocab_size
+        self.fake_vocab_size = 49984
         self.hidden_size = hidden_size
         self.intermediate_size = intermediate_size
         self.num_hidden_layers = num_hidden_layers
@@ -603,9 +604,10 @@ class LlamaModel(nn.Module):
 
 class LlamaForCausalLM(nn.Module):
     def __init__(self, config: LlamaConfig, sep_embed: bool = False):
+        self.config = config
         self.model = LlamaModel(config, sep_embed)
         self.lm_head = Linear(
-            config.hidden_size, config.vocab_size, dtype=config.dtype, bias=False
+            config.hidden_size, config.fake_vocab_size, dtype=config.dtype, bias=False
         )
 
         ############ Rotary embedding constants ############
@@ -828,6 +830,10 @@ def create_softmax_func(bb: relax.BlockBuilder, config: LlamaConfig) -> None:
         )
         temperature = nn.Placeholder((), dtype="float32", name="temperature")
         with bb.dataflow():
+            # assert config.fake_vocab_size >= config.vocab_size 
+            # if config.fake_vocab_size > config.vocab_size:
+            #     logits = nn.emit(relax.op.strided_slice(logits, [len(logits.struct_info.shape) - 1], begin = [tvm.tir.IntImm("int64", 0)], end = [tvm.tir.IntImm("int64", config.vocab_size)]))
+            #     print(logits.struct_info.shape)
             div = bb.emit(relax.op.divide(logits, temperature))
             softmax = bb.emit(relax.op.nn.softmax(div, axis=-1))
             gv = bb.emit_output(softmax)
@@ -897,6 +903,13 @@ def get_model(args, hf_config):
             return [pname]
 
     def f_convert_param_bkwd(torch_pname: str, torch_param):
+        print(f"===== {torch_pname}")
+        if "lm_head" in torch_pname and config.fake_vocab_size > config.vocab_size:
+            import numpy as np
+            print(f"LM_HEAD: before padding param.shape: {torch_param.shape}")
+            torch_param = np.pad(torch_param,((0, config.fake_vocab_size - config.vocab_size), (0, 0)), mode='constant', constant_values=0)
+            print(f"LM_HEAD: after padding param.shape: {torch_param.shape}")
+            return [(torch_pname, torch_param.astype(dtype))]
         if not config.combine_matmul:
             return [(torch_pname, torch_param.astype(dtype))]
 

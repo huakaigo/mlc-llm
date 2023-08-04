@@ -817,7 +817,6 @@ class ParamReplacer(PyExprMutator):
     def rewrite_func(self, func: Function, param_var: relax.Var) -> relax.Function:
         num_input = int(func.attrs["num_input"])
         self.param_set = set(func.params[num_input:])
-
         body = self.visit_expr(func.body)
         return relax.Function(
             params=func.params[:num_input] + [param_var],

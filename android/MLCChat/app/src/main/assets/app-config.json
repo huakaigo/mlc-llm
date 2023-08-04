@@ -1,7 +1,9 @@
 {
   "model_libs": [
     "vicuna-v1-7b-q4f16_0",
-    "RedPajama-INCITE-Chat-3B-v1-q4f16_0"
+    "RedPajama-INCITE-Chat-3B-v1-q4f16_0",
+    "llama2_7b_watermark_49984_opt-q4f16_0",
+    "llama2_7b_chat_watermark-q4f16_0"
   ],
   "model_list": [
     {
@@ -11,6 +13,14 @@
     {
       "model_url": "https://huggingface.co/mlc-ai/mlc-chat-RedPajama-INCITE-Chat-3B-v1-q4f16_0/",
       "local_id": "RedPajama-INCITE-Chat-3B-v1-q4f16_0"
+    },
+    {
+      "model_url": "https://local/llama2_7b_watermark_49984_opt-q4f16_0/",
+      "local_id": "llama2_7b_watermark_49984_opt-q4f16_0"
+    },
+    {
+      "model_url": "https://local/llama2_7b_chat_watermark-q4f16_0/",
+      "local_id": "llama2_7b_chat_watermark-q4f16_0"
     }
   ],
   "add_model_samples": [
