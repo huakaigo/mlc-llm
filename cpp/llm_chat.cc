@@ -52,6 +52,17 @@ std::string LoadBytesFromFile(const std::string& path) {
   return data;
 }
 
+void WriteProfileData(const std::string &filename, const std::string content) {
+  std::ofstream file(filename.c_str(), std::ios_base::out);
+  if (!file.is_open()) {
+    LOG(FATAL) << "Cannot Write profile content to : " << filename;
+  }
+  file << content;
+  file.close();
+
+  LOG(INFO) << "Write profile content to : " << filename;
+}
+
 std::unique_ptr<Tokenizer> TokenizerFromPath(const std::string& _path) {
   std::filesystem::path path(_path);
   std::filesystem::path sentencepiece;
@@ -240,13 +251,22 @@ class LLMChat {
     // Step 2. Initialize vm, we use the packed function mechanism
     // so there is no explicit abi dependency on these extra
     // classes other than basic tvm runtime.
+#ifdef LLM_PROFILING
+    auto fload_exec = executable->GetFunction("vm_profiler_load_executable");
+    ICHECK(fload_exec.defined()) << "TVM runtime cannot find vm_profiler_load_executable";
+#else
     auto fload_exec = executable->GetFunction("vm_load_executable");
     ICHECK(fload_exec.defined()) << "TVM runtime cannot find vm_load_executable";
+#endif
     vm_ = fload_exec();
     vm_->GetFunction("vm_initialization")(static_cast<int>(device_.device_type), device_.device_id,
                                           static_cast<int>(relax_vm::AllocatorType::kPooled),
                                           static_cast<int>(kDLCPU), 0,
                                           static_cast<int>(relax_vm::AllocatorType::kPooled));
+#ifdef LLM_PROFILING
+    profile_func_ = vm_->GetFunction("profile");
+    ICHECK(profile_func_.defined()) << "TVM runtime get profile_func_ failed";
+#endif
 
     prefill_func_ = vm_->GetFunction("prefill");
     embed_func_ = vm_->GetFunction("embed");
@@ -787,12 +807,27 @@ class LLMChat {
     Array<ObjectRef> ret;
     if (input_tokens.size() > 1 && prefill_func_.defined()) {
       NDArray input_data = this->GetInputTokenNDArray(input_tokens);
+#ifdef LLM_PROFILING
+      static int prefill_index = 0;
+      printf("Run prefill, input tokens = %lu\n", input_tokens.size());
+      std::string profile_json =
+          profile_func_("prefill", input_data, ShapeTuple({cur_pos}), kv_cache_, params_);
+      WriteProfileData("./perf_test/prefill_" + std::to_string(prefill_index++) + "_" + std::to_string(input_tokens.size()) + ".json", profile_json);
+#endif
+
       ret = prefill_func_(input_data, ShapeTuple({cur_pos}), kv_cache_, params_);
     } else {
+      static int decode_index = 0;
       // running decode function when prefill is not available
       for (int i = 0; i < input_tokens.size(); ++i) {
         NDArray input_data = this->GetInputTokenNDArray({input_tokens[i]});
         int64_t pos = cur_pos + i + 1 - input_tokens.size();
+#ifdef LLM_PROFILING
+        printf("Run decode, input tokens = %lu\n", input_tokens.size());
+        std::string profile_json = profile_func_("decode", input_data, ShapeTuple({cur_pos}), kv_cache_, params_);
+        WriteProfileData("./perf_test/decode_" + std::to_string(decode_index++) + "_" + std::to_string(input_tokens.size()) + ".json" , profile_json);
+#endif
+
         ret = decode_func_(input_data, ShapeTuple({pos}), kv_cache_, params_);
       }
     }
@@ -940,6 +975,10 @@ class LLMChat {
   Device device_;
   // The vm module
   Module vm_;
+#ifdef LLM_PROFILING
+  // profiling function
+  PackedFunc profile_func_;
+#endif
   // encoding function
   PackedFunc prefill_func_;
   // embedding function

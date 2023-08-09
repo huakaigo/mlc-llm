@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
-set(CMAKE_C_COMPILER /usr/bin/gcc-9)
-set(CMAKE_CXX_COMPILER /usr/bin/g++-9)
+# set(CMAKE_C_COMPILER /usr/bin/gcc-9)
+# set(CMAKE_CXX_COMPILER /usr/bin/g++-9)
 project(mlc_llm C CXX)
 
 include(CheckCXXCompilerFlag)
@@ -47,6 +47,12 @@ endif()
 option(BUILD_CPP_TEST "Build cpp unittests" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(MLC_PROFILING "Profiling performance" OFF)
+if (MLC_PROFILING)
+add_definitions(-DLLM_PROFILING)
+message(STATUS "Using profiling mode. Please run `mkdir perf_test` in wrok_dir.")
+endif()
 
 # tvm runtime config: minimize runtime components
 set(USE_RPC OFF)
