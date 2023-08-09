@@ -40,7 +40,7 @@ class LlamaConfig:
         self.dtype = dtype
         self.max_sequence_length = max_sequence_length
         self.vocab_size = vocab_size
-        self.fake_vocab_size = 49984
+        self.fake_vocab_size = 50000#vocab_size
         self.hidden_size = hidden_size
         self.intermediate_size = intermediate_size
         self.num_hidden_layers = num_hidden_layers
@@ -826,8 +826,9 @@ def create_kv_cache_func(bb: relax.BlockBuilder, config: LlamaConfig) -> None:
 def create_softmax_func(bb: relax.BlockBuilder, config: LlamaConfig) -> None:
     with bb.function("softmax_with_temperature"):
         logits = nn.Placeholder(
-            (1, 1, config.vocab_size), dtype="float32", name="logits"
+            (1, 1, config.fake_vocab_size), dtype="float32", name="logits"
         )
+        print(f"=====logits.shape = {logits.struct_info.shape}")
         temperature = nn.Placeholder((), dtype="float32", name="temperature")
         with bb.dataflow():
             # assert config.fake_vocab_size >= config.vocab_size 
