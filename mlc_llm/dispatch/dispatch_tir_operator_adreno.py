@@ -3168,105 +3168,6 @@ def fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_cast7_after(lv1345: T.
                                     if v1 < n:
                                         p_output0_intermediate[v0, v1, v2] = T.Cast("float32", T.Cast("float16", var_NT_matmul_intermediate_pad_local[v0, v1, v2] + linear_bias191[v2]) + lv317[v0, v1, v2])
 
-
-@T.prim_func
-def fused_fused_decode11_fused_matmul6_cast2(lv1323: T.Buffer((T.int64(512), T.int64(49984)), "uint32"), lv1324: T.Buffer((T.int64(128), T.int64(49984)), "float16"), lv1607: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), p_output0_intermediate: T.Buffer((T.int64(1), T.int64(1), T.int64(49984)), "float32")):
-    # T.func_attr({"global_symbol": "main", "tir.noalias": T.bool(True)})
-    T.func_attr({"tir.noalias": T.bool(True)})
-    # with T.block("root"):
-    p_output0_intermediate_1 = T.alloc_buffer((T.int64(4096), T.int64(49984)), "float16")
-    var_matmul_intermediate = T.alloc_buffer((T.int64(1), T.int64(1), T.int64(49984)), "float16")
-    for i, j in T.grid(T.int64(4096), T.int64(49984)):
-        with T.block("decode"):
-            v_i, v_j = T.axis.remap("SS", [i, j])
-            T.reads(lv1323[v_i // T.int64(8), v_j], lv1324[v_i // T.int64(32), v_j])
-            T.writes(p_output0_intermediate_1[v_i, v_j])
-            p_output0_intermediate_1[v_i, v_j] = (T.Cast("float16", T.bitwise_and(T.shift_right(lv1323[v_i // T.int64(8), v_j], T.Cast("uint32", v_i % T.int64(8)) * T.uint32(4)), T.uint32(15))) - T.float16(7)) * lv1324[v_i // T.int64(32), v_j]
-    for i0, i1, i2, k in T.grid(T.int64(1), T.int64(1), T.int64(49984), T.int64(4096)):
-        with T.block("matmul"):
-            v_i0, v_i1, v_i2, v_k = T.axis.remap("SSSR", [i0, i1, i2, k])
-            T.reads(lv1607[v_i0, v_i1, v_k], p_output0_intermediate_1[v_k, v_i2])
-            T.writes(var_matmul_intermediate[v_i0, v_i1, v_i2])
-            with T.init():
-                var_matmul_intermediate[v_i0, v_i1, v_i2] = T.float16(0)
-            var_matmul_intermediate[v_i0, v_i1, v_i2] = var_matmul_intermediate[v_i0, v_i1, v_i2] + lv1607[v_i0, v_i1, v_k] * p_output0_intermediate_1[v_k, v_i2]
-    for i0, i1, i2 in T.grid(T.int64(1), T.int64(1), T.int64(49984)):
-        with T.block("compute"):
-            v_i0, v_i1, v_i2 = T.axis.remap("SSS", [i0, i1, i2])
-            T.reads(var_matmul_intermediate[v_i0, v_i1, v_i2])
-            T.writes(p_output0_intermediate[v_i0, v_i1, v_i2])
-            p_output0_intermediate[v_i0, v_i1, v_i2] = T.Cast("float32", var_matmul_intermediate[v_i0, v_i1, v_i2])
-
-
-
-def sch_fused_fused_decode11_fused_matmul6_cast2(func):
-    sch = tvm.tir.Schedule(func)
-    b0 = sch.get_block(name="decode", func_name="main")
-    b1 = sch.get_block(name="matmul", func_name="main")
-    b2 = sch.get_block(name="compute", func_name="main")
-    b3 = sch.get_block(name="root", func_name="main")
-    sch.annotate(block_or_loop=b1, ann_key="meta_schedule.tiling_structure", ann_val="SSSRRSRS")
-    l4, l5, l6, l7 = sch.get_loops(block=b1)
-    v8, v9, v10, v11, v12 = sch.sample_perfect_tile(loop=l4, n=5, max_innermost_factor=64, decision=[1, 1, 1, 1, 1])
-    l13, l14, l15, l16, l17 = sch.split(loop=l4, factors=[v8, v9, v10, v11, v12], preserve_unit_iters=True)
-    v18, v19, v20, v21, v22 = sch.sample_perfect_tile(loop=l5, n=5, max_innermost_factor=64, decision=[1, 1, 1, 1, 1])
-    l23, l24, l25, l26, l27 = sch.split(loop=l5, factors=[v18, v19, v20, v21, v22], preserve_unit_iters=True)
-    v28, v29, v30, v31, v32 = sch.sample_perfect_tile(loop=l6, n=5, max_innermost_factor=64, decision=[781, 2, 32, 1, 1])
-    l33, l34, l35, l36, l37 = sch.split(loop=l6, factors=[v28, v29, v30, v31, v32], preserve_unit_iters=True)
-    v38, v39, v40 = sch.sample_perfect_tile(loop=l7, n=3, max_innermost_factor=64, decision=[128, 2, 16])
-    l41, l42, l43 = sch.split(loop=l7, factors=[v38, v39, v40], preserve_unit_iters=True)
-    sch.reorder(l13, l23, l33, l14, l24, l34, l15, l25, l35, l41, l42, l16, l26, l36, l43, l17, l27, l37)
-    l44 = sch.fuse(l13, l23, l33, preserve_unit_iters=True)
-    sch.bind(loop=l44, thread_axis="blockIdx.x")
-    l45 = sch.fuse(l14, l24, l34, preserve_unit_iters=True)
-    sch.bind(loop=l45, thread_axis="vthread.x")
-    l46 = sch.fuse(l15, l25, l35, preserve_unit_iters=True)
-    sch.bind(loop=l46, thread_axis="threadIdx.x")
-    sch.annotate(block_or_loop=b1, ann_key="meta_schedule.thread_extent_low_inclusive", ann_val=32)
-    sch.annotate(block_or_loop=b1, ann_key="meta_schedule.thread_extent_high_inclusive", ann_val=1024)
-    b47 = sch.cache_write(block=b1, write_buffer_index=0, storage_scope="local")
-    sch.reverse_compute_at(block=b47, loop=l46, preserve_unit_loops=True, index=-1)
-    b48 = sch.cache_read(block=b1, read_buffer_index=0, storage_scope="shared", consumer_blocks=[b1])
-    sch.compute_at(block=b48, loop=l41, preserve_unit_loops=True, index=-1)
-    l49, l50, l51, l52, l53, l54, l55 = sch.get_loops(block=b48)
-    l56 = sch.fuse(l53, l54, l55, preserve_unit_iters=True)
-    v57 = sch.sample_categorical(candidates=[1, 2, 4, 8], probs=[0.25, 0.25, 0.25, 0.25], decision=1)
-    sch.annotate(block_or_loop=b48, ann_key="meta_schedule.cooperative_fetch", ann_val=v57)
-    b58 = sch.cache_read(block=b1, read_buffer_index=1, storage_scope="shared", consumer_blocks=[b1])
-    sch.compute_at(block=b58, loop=l41, preserve_unit_loops=True, index=-1)
-    l59, l60, l61, l62, l63, l64 = sch.get_loops(block=b58)
-    l65 = sch.fuse(l63, l64, preserve_unit_iters=True)
-    v66 = sch.sample_categorical(candidates=[1, 2, 4, 8], probs=[0.25, 0.25, 0.25, 0.25], decision=1)
-    sch.annotate(block_or_loop=b58, ann_key="meta_schedule.cooperative_fetch", ann_val=v66)
-    sch.reverse_compute_inline(block=b2)
-    sch.compute_inline(block=b0)
-    v67 = sch.sample_categorical(candidates=[0, 16, 64, 512, 1024], probs=[0.20000000000000001, 0.20000000000000001, 0.20000000000000001, 0.20000000000000001, 0.20000000000000001], decision=4)
-    sch.annotate(block_or_loop=b3, ann_key="meta_schedule.unroll_explicit", ann_val=v67)
-    sch.enter_postproc()
-    sch.unannotate(block_or_loop=b48, ann_key="meta_schedule.cooperative_fetch")
-    l68, l69, l70, l71, l72 = sch.get_loops(block=b48)
-    l73, l74, l75 = sch.split(loop=l72, factors=[None, 32, 2], preserve_unit_iters=True)
-    sch.vectorize(loop=l75)
-    sch.bind(loop=l74, thread_axis="threadIdx.x")
-    sch.unannotate(block_or_loop=b58, ann_key="meta_schedule.cooperative_fetch")
-    l76, l77, l78, l79, l80 = sch.get_loops(block=b58)
-    l81, l82, l83 = sch.split(loop=l80, factors=[None, 32, 2], preserve_unit_iters=True)
-    sch.vectorize(loop=l83)
-    sch.bind(loop=l82, thread_axis="threadIdx.x")
-    b84 = sch.get_block(name="root", func_name="main")
-    sch.unannotate(block_or_loop=b84, ann_key="meta_schedule.unroll_explicit")
-    b85, b86, b87, b88 = sch.get_child_blocks(b84)
-    l89, l90, l91, l92, l93, l94, l95 = sch.get_loops(block=b85)
-    l96, l97, l98, l99, l100, l101, l102 = sch.get_loops(block=b86)
-    l103, l104, l105, l106, l107, l108, l109, l110, l111, l112, l113, l114 = sch.get_loops(block=b87)
-    sch.annotate(block_or_loop=l103, ann_key="pragma_auto_unroll_max_step", ann_val=1024)
-    sch.annotate(block_or_loop=l103, ann_key="pragma_unroll_explicit", ann_val=1)
-    l115, l116, l117, l118, l119, l120 = sch.get_loops(block=b88)
-    b121 = sch.get_block(name="matmul", func_name="main")
-    l122, l123, l124, l125, l126, l127, l128, l129, l130, l131, l132, l133 = sch.get_loops(block=b121)
-    b134 = sch.decompose_reduction(block=b121, loop=l125)
-    return sch.mod["main"].with_attr("tir.is_scheduled", 1)
-
 @T.prim_func
 def fused_decode9_fused_matmul6_cast2(lv1323: T.Buffer((T.int64(512), T.int64(50000)), "uint32"), lv1324: T.Buffer((T.int64(128), T.int64(50000)), "float16"), lv1607: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), p_output0_intermediate: T.Buffer((T.int64(1), T.int64(1), T.int64(50000)), "float32")):
     T.func_attr({"tir.noalias": T.bool(True)})
@@ -3351,6 +3252,51 @@ def sch_fused_decode9_fused_matmul6_cast2(func):
     sch.bind(loop=l48, thread_axis="threadIdx.x")
     return sch.mod["main"].with_attr("tir.is_scheduled", 1)
 
+@T.prim_func
+def rms_norm1(A: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), B: T.Buffer((T.int64(4096),), "float16"), rms_norm: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16")):
+    T.func_attr({"op_pattern": 4, "tir.noalias": T.bool(True)})
+    # with T.block("root"):
+    Ared_temp = T.alloc_buffer((T.int64(1), T.int64(1)))
+    for bsz, i, k in T.grid(T.int64(1), T.int64(1), T.int64(4096)):
+        with T.block("Ared_temp"):
+            v_bsz, v_i, v_k = T.axis.remap("SSR", [bsz, i, k])
+            T.reads(A[v_bsz, v_i, v_k])
+            T.writes(Ared_temp[v_bsz, v_i])
+            with T.init():
+                Ared_temp[v_bsz, v_i] = T.float32(0)
+            Ared_temp[v_bsz, v_i] = Ared_temp[v_bsz, v_i] + T.Cast("float32", A[v_bsz, v_i, v_k]) * T.Cast("float32", A[v_bsz, v_i, v_k])
+    for bsz, i, k in T.grid(T.int64(1), T.int64(1), T.int64(4096)):
+        with T.block("rms_norm"):
+            v_bsz, v_i, v_k = T.axis.remap("SSS", [bsz, i, k])
+            T.reads(B[v_k], A[v_bsz, v_i, v_k], Ared_temp[v_bsz, v_i])
+            T.writes(rms_norm[v_bsz, v_i, v_k])
+            rms_norm[v_bsz, v_i, v_k] = T.Cast("float16", T.Cast("float32", B[v_k]) * (T.Cast("float32", A[v_bsz, v_i, v_k]) / T.sqrt(Ared_temp[v_bsz, v_i] * T.float32(0.000244140625) + T.float32(9.9999999999999995e-07))))
+
+@T.prim_func
+def rms_norm1_opt(A: T.Buffer((1, 1, 4096), "float16"), B: T.Buffer((4096,), "float16"), rms_norm: T.Buffer((1, 1, 4096), "float16")):
+    T.func_attr({"global_symbol": "main", "op_pattern": 4, "tir.is_scheduled": T.bool(True), "tir.noalias": T.bool(True)})
+    # with T.block("root"):
+    Ared_temp_shared = T.alloc_buffer((1, 1), scope="shared")
+    for bsz_i_fused in T.thread_binding(1, thread="blockIdx.x", annotations={"pragma_auto_unroll_max_step": T.int64(1024), "pragma_unroll_explicit": T.int64(1)}):
+        for ax0, ax1, ax2_0 in T.grid(1, 1, 16):
+            for ax2_1 in T.thread_binding(256, thread="threadIdx.x"):
+                with T.block("Ared_temp"):
+                    v_bsz, v_i = T.axis.remap("SS", [ax0, ax1])
+                    v_k = T.axis.reduce(4096, ax2_0 * 256 + ax2_1)
+                    T.reads(A[v_bsz, v_i, v_k])
+                    T.writes(Ared_temp_shared[v_bsz, v_i])
+                    with T.init():
+                        Ared_temp_shared[v_bsz, v_i] = T.float32(0)
+                    Ared_temp_shared[v_bsz, v_i] = Ared_temp_shared[v_bsz, v_i] + T.Cast("float32", A[v_bsz, v_i, v_k]) * T.Cast("float32", A[v_bsz, v_i, v_k])
+        for k_0 in range(16):
+            for k_1 in T.thread_binding(256, thread="threadIdx.x"):
+                with T.block("rms_norm"):
+                    v_bsz = T.axis.spatial(1, 0)
+                    v_i = T.axis.spatial(1, 0)
+                    v_k = T.axis.spatial(4096, k_0 * 256 + k_1)
+                    T.reads(B[v_k], A[v_bsz, v_i, v_k], Ared_temp_shared[v_bsz, v_i])
+                    T.writes(rms_norm[v_bsz, v_i, v_k])
+                    rms_norm[v_bsz, v_i, v_k] = T.Cast("float16", T.Cast("float32", B[v_k]) * (T.Cast("float32", A[v_bsz, v_i, v_k]) / T.sqrt(Ared_temp_shared[v_bsz, v_i] * T.float32(0.000244140625) + T.float32(9.9999999999999995e-07))))
 
 def get_dict_key(func):
     return tvm.ir.structural_hash(func), func
@@ -3393,8 +3339,8 @@ tir_dispatch_dict = {
     get_dict_key(fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5): fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_after,
     get_dict_key(fused_decode1_fused_NT_matmul1_add4_add5): fused_decode1_fused_NT_matmul1_add4_add5_after,
     get_dict_key(fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_cast7): fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_cast7_after,
-    get_dict_key(fused_fused_decode11_fused_matmul6_cast2): sch_fused_fused_decode11_fused_matmul6_cast2(fused_fused_decode11_fused_matmul6_cast2),
-    get_dict_key(fused_decode9_fused_matmul6_cast2): sch_fused_decode9_fused_matmul6_cast2(fused_decode9_fused_matmul6_cast2)
+    get_dict_key(fused_decode9_fused_matmul6_cast2): sch_fused_decode9_fused_matmul6_cast2(fused_decode9_fused_matmul6_cast2),
+    get_dict_key(rms_norm1): rms_norm1_opt
 }
 
 
@@ -3413,9 +3359,12 @@ class DispatchTIROperatorAdreno:
         self, mod: IRModule, ctx: tvm.transform.PassContext
     ) -> IRModule:
         for gv in mod.functions:
+            print(gv)
+        print("================================================")
+        for gv in mod.functions:
             scheduled_func = lookup_func(mod[gv])
             if scheduled_func is not None:
-                print(f"Dispatcher: {gv} was replaced")
+                print(f"AdrenoDispatcher: {gv} was replaced")
                 mod[gv] = scheduled_func
 
         return mod

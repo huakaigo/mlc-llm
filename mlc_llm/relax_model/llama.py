@@ -40,7 +40,7 @@ class LlamaConfig:
         self.dtype = dtype
         self.max_sequence_length = max_sequence_length
         self.vocab_size = vocab_size
-        self.fake_vocab_size = 50000#vocab_size
+        self.fake_vocab_size = vocab_size#50000
         self.hidden_size = hidden_size
         self.intermediate_size = intermediate_size
         self.num_hidden_layers = num_hidden_layers
@@ -850,7 +850,7 @@ def get_model(args, hf_config):
     config = LlamaConfig(
         **hf_config,
         dtype=dtype,
-        combine_matmul=not args.quantization.name.startswith("autogptq"),
+        combine_matmul=False#not args.quantization.name.startswith("autogptq"),
     )
     if max_seq_len != -1:
         config.max_sequence_length = max_seq_len
