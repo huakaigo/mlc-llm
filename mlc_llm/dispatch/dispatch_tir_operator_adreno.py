@@ -3254,7 +3254,7 @@ def sch_fused_decode9_fused_matmul6_cast2(func):
 
 @T.prim_func
 def rms_norm1(A: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), B: T.Buffer((T.int64(4096),), "float16"), rms_norm: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16")):
-    T.func_attr({"op_pattern": 4, "tir.noalias": T.bool(True)})
+    T.func_attr({"tir.noalias": T.bool(True)})
     # with T.block("root"):
     Ared_temp = T.alloc_buffer((T.int64(1), T.int64(1)))
     for bsz, i, k in T.grid(T.int64(1), T.int64(1), T.int64(4096)):
