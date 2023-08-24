@@ -3168,89 +3168,94 @@ def fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_cast7_after(lv1345: T.
                                     if v1 < n:
                                         p_output0_intermediate[v0, v1, v2] = T.Cast("float32", T.Cast("float16", var_NT_matmul_intermediate_pad_local[v0, v1, v2] + linear_bias191[v2]) + lv317[v0, v1, v2])
 
-@T.prim_func
-def fused_decode9_fused_matmul6_cast2(lv1323: T.Buffer((T.int64(512), T.int64(50000)), "uint32"), lv1324: T.Buffer((T.int64(128), T.int64(50000)), "float16"), lv1607: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), p_output0_intermediate: T.Buffer((T.int64(1), T.int64(1), T.int64(50000)), "float32")):
-    T.func_attr({"tir.noalias": T.bool(True)})
-    # with T.block("root"):
-    p_output0_intermediate_1 = T.alloc_buffer((T.int64(4096), T.int64(50000)), "float16")
-    var_matmul_intermediate = T.alloc_buffer((T.int64(1), T.int64(1), T.int64(50000)), "float16")
-    for i, j in T.grid(T.int64(4096), T.int64(50000)):
-        with T.block("decode"):
-            v_i, v_j = T.axis.remap("SS", [i, j])
-            T.reads(lv1323[v_i // T.int64(8), v_j], lv1324[v_i // T.int64(32), v_j])
-            T.writes(p_output0_intermediate_1[v_i, v_j])
-            p_output0_intermediate_1[v_i, v_j] = (T.Cast("float16", T.bitwise_and(T.shift_right(lv1323[v_i // T.int64(8), v_j], T.Cast("uint32", v_i % T.int64(8)) * T.uint32(4)), T.uint32(15))) - T.float16(7)) * lv1324[v_i // T.int64(32), v_j]
-    for i0, i1, i2, k in T.grid(T.int64(1), T.int64(1), T.int64(50000), T.int64(4096)):
-        with T.block("matmul"):
-            v_i0, v_i1, v_i2, v_k = T.axis.remap("SSSR", [i0, i1, i2, k])
-            T.reads(lv1607[v_i0, v_i1, v_k], p_output0_intermediate_1[v_k, v_i2])
-            T.writes(var_matmul_intermediate[v_i0, v_i1, v_i2])
-            with T.init():
-                var_matmul_intermediate[v_i0, v_i1, v_i2] = T.float16(0)
-            var_matmul_intermediate[v_i0, v_i1, v_i2] = var_matmul_intermediate[v_i0, v_i1, v_i2] + lv1607[v_i0, v_i1, v_k] * p_output0_intermediate_1[v_k, v_i2]
-    for i0, i1, i2 in T.grid(T.int64(1), T.int64(1), T.int64(50000)):
-        with T.block("compute"):
-            v_i0, v_i1, v_i2 = T.axis.remap("SSS", [i0, i1, i2])
-            T.reads(var_matmul_intermediate[v_i0, v_i1, v_i2])
-            T.writes(p_output0_intermediate[v_i0, v_i1, v_i2])
-            p_output0_intermediate[v_i0, v_i1, v_i2] = T.Cast("float32", var_matmul_intermediate[v_i0, v_i1, v_i2])
+def get_lm_head_source_func(vocab_size):
+    @T.prim_func
+    def fused_decode9_fused_matmul6_cast2(lv1323: T.Buffer((T.int64(512), T.int64(vocab_size)), "uint32"), lv1324: T.Buffer((T.int64(128), T.int64(vocab_size)), "float16"), lv1607: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), p_output0_intermediate: T.Buffer((T.int64(1), T.int64(1), T.int64(vocab_size)), "float32")):
+        T.func_attr({"tir.noalias": T.bool(True)})
+        # with T.block("root"):
+        p_output0_intermediate_1 = T.alloc_buffer((T.int64(4096), T.int64(vocab_size)), "float16")
+        var_matmul_intermediate = T.alloc_buffer((T.int64(1), T.int64(1), T.int64(vocab_size)), "float16")
+        for i, j in T.grid(T.int64(4096), T.int64(vocab_size)):
+            with T.block("decode"):
+                v_i, v_j = T.axis.remap("SS", [i, j])
+                T.reads(lv1323[v_i // T.int64(8), v_j], lv1324[v_i // T.int64(32), v_j])
+                T.writes(p_output0_intermediate_1[v_i, v_j])
+                p_output0_intermediate_1[v_i, v_j] = (T.Cast("float16", T.bitwise_and(T.shift_right(lv1323[v_i // T.int64(8), v_j], T.Cast("uint32", v_i % T.int64(8)) * T.uint32(4)), T.uint32(15))) - T.float16(7)) * lv1324[v_i // T.int64(32), v_j]
+        for i0, i1, i2, k in T.grid(T.int64(1), T.int64(1), T.int64(vocab_size), T.int64(4096)):
+            with T.block("matmul"):
+                v_i0, v_i1, v_i2, v_k = T.axis.remap("SSSR", [i0, i1, i2, k])
+                T.reads(lv1607[v_i0, v_i1, v_k], p_output0_intermediate_1[v_k, v_i2])
+                T.writes(var_matmul_intermediate[v_i0, v_i1, v_i2])
+                with T.init():
+                    var_matmul_intermediate[v_i0, v_i1, v_i2] = T.float16(0)
+                var_matmul_intermediate[v_i0, v_i1, v_i2] = var_matmul_intermediate[v_i0, v_i1, v_i2] + lv1607[v_i0, v_i1, v_k] * p_output0_intermediate_1[v_k, v_i2]
+        for i0, i1, i2 in T.grid(T.int64(1), T.int64(1), T.int64(vocab_size)):
+            with T.block("compute"):
+                v_i0, v_i1, v_i2 = T.axis.remap("SSS", [i0, i1, i2])
+                T.reads(var_matmul_intermediate[v_i0, v_i1, v_i2])
+                T.writes(p_output0_intermediate[v_i0, v_i1, v_i2])
+                p_output0_intermediate[v_i0, v_i1, v_i2] = T.Cast("float32", var_matmul_intermediate[v_i0, v_i1, v_i2])
+    return fused_decode9_fused_matmul6_cast2
 
-def sch_fused_decode9_fused_matmul6_cast2(func):
-    sch = tvm.tir.Schedule(func)
-    b0 = sch.get_block(name="decode", func_name="main")
-    b1 = sch.get_block(name="matmul", func_name="main")
-    l2, l3, l4, l5 = sch.get_loops(block=b1)
-    l6 = sch.fuse(l2, l3, l4, preserve_unit_iters=True)
-    v7, v8, v9 = sch.sample_perfect_tile(
-        loop=l6, n=3, max_innermost_factor=4, decision=[125, 100, 4]
-    )
-    print(v7.script())
-    from tvm.tir import IntImm
-    l10, l11, l12 = sch.split(loop=l6, factors=[v7, v8, v9], preserve_unit_iters=True)
-    v13, v14, v15 = sch.sample_perfect_tile(
-        loop=l5, n=3, max_innermost_factor=8, decision=[512, 8, 1]
-    )
-    l16, l17, l18 = sch.split(
-        loop=l5, factors=[v13, v14, v15], preserve_unit_iters=True
-    )
-    sch.reorder(l10, l11, l16, l17, l18, l12)
-    sch.bind(loop=l10, thread_axis="blockIdx.x")
-    sch.bind(loop=l11, thread_axis="threadIdx.x")
-    # print_object_attr(l11)
-    sch.compute_inline(block=b0)
-    b19 = sch.cache_write(block=b1, write_buffer_index=0, storage_scope="local")
-    sch.reverse_compute_at(block=b19, loop=l11, preserve_unit_loops=True, index=-1)
-    b20 = sch.cache_read(block=b1, read_buffer_index=1, storage_scope="local")
-    b21 = sch.cache_read(block=b1, read_buffer_index=2, storage_scope="local")
-    b22 = sch.cache_read(block=b1, read_buffer_index=0, storage_scope="shared")
-    sch.compute_at(block=b22, loop=l11, preserve_unit_loops=True, index=-1)
-    v23 = sch.sample_categorical(
-        candidates=[1, 2, 4, 8], probs=[0.25, 0.25, 0.25, 0.25], decision=1
-    )
-    sch.annotate(
-        block_or_loop=b22, ann_key="meta_schedule.cooperative_fetch", ann_val=v23
-    )
-    sch.compute_at(block=b20, loop=l17, preserve_unit_loops=True, index=-1)
-    sch.compute_at(block=b21, loop=l16, preserve_unit_loops=True, index=-1)
-    l24, l25, l26, l27, l28, l29 = sch.get_loops(block=b20)
-    sch.vectorize(loop=l29)
-    l30, l31, l32, l33, l34 = sch.get_loops(block=b21)
-    sch.vectorize(loop=l34)
-    l35, l36, l37, l38, l39 = sch.get_loops(block=b19)
-    sch.vectorize(loop=l39)
-    sch.vectorize(loop=l12)
-    b40 = sch.decompose_reduction(block=b1, loop=l16)
-    b41 = sch.get_block(name="compute", func_name="main")
-    sch.reverse_compute_inline(block=b41)
-    sch.enter_postproc()
-    sch.unannotate(block_or_loop=b22, ann_key="meta_schedule.cooperative_fetch")
-    l42, l43, l44, l45, l46 = sch.get_loops(block=b22)
-    l47, l48, l49 = sch.split(
-        loop=l46, factors=[None, 100, 2], preserve_unit_iters=True
-    )
-    sch.vectorize(loop=l49)
-    sch.bind(loop=l48, thread_axis="threadIdx.x")
-    return sch.mod["main"].with_attr("tir.is_scheduled", 1)
+def get_lm_head_sch_source_func(vocab_size):
+    def sch_fused_decode9_fused_matmul6_cast2(func):
+        sch = tvm.tir.Schedule(func)
+        b0 = sch.get_block(name="decode", func_name="main")
+        b1 = sch.get_block(name="matmul", func_name="main")
+        l2, l3, l4, l5 = sch.get_loops(block=b1)
+        l6 = sch.fuse(l2, l3, l4, preserve_unit_iters=True)
+        assert vocab_size % 400 == 0, f"vocab size must be a multiple of 400, now is {vocab_size}"
+        v7, v8, v9 = sch.sample_perfect_tile(
+            loop=l6, n=3, max_innermost_factor=4, decision=[vocab_size//400, 100, 4]
+        )
+        from tvm.tir import IntImm
+        l10, l11, l12 = sch.split(loop=l6, factors=[v7, v8, v9], preserve_unit_iters=True)
+        v13, v14, v15 = sch.sample_perfect_tile(
+            loop=l5, n=3, max_innermost_factor=8, decision=[512, 8, 1]
+        )
+        l16, l17, l18 = sch.split(
+            loop=l5, factors=[v13, v14, v15], preserve_unit_iters=True
+        )
+        sch.reorder(l10, l11, l16, l17, l18, l12)
+        sch.bind(loop=l10, thread_axis="blockIdx.x")
+        sch.bind(loop=l11, thread_axis="threadIdx.x")
+        # print_object_attr(l11)
+        sch.compute_inline(block=b0)
+        b19 = sch.cache_write(block=b1, write_buffer_index=0, storage_scope="local")
+        sch.reverse_compute_at(block=b19, loop=l11, preserve_unit_loops=True, index=-1)
+        b20 = sch.cache_read(block=b1, read_buffer_index=1, storage_scope="local")
+        b21 = sch.cache_read(block=b1, read_buffer_index=2, storage_scope="local")
+        b22 = sch.cache_read(block=b1, read_buffer_index=0, storage_scope="shared")
+        sch.compute_at(block=b22, loop=l11, preserve_unit_loops=True, index=-1)
+        v23 = sch.sample_categorical(
+            candidates=[1, 2, 4, 8], probs=[0.25, 0.25, 0.25, 0.25], decision=1
+        )
+        sch.annotate(
+            block_or_loop=b22, ann_key="meta_schedule.cooperative_fetch", ann_val=v23
+        )
+        sch.compute_at(block=b20, loop=l17, preserve_unit_loops=True, index=-1)
+        sch.compute_at(block=b21, loop=l16, preserve_unit_loops=True, index=-1)
+        l24, l25, l26, l27, l28, l29 = sch.get_loops(block=b20)
+        sch.vectorize(loop=l29)
+        l30, l31, l32, l33, l34 = sch.get_loops(block=b21)
+        sch.vectorize(loop=l34)
+        l35, l36, l37, l38, l39 = sch.get_loops(block=b19)
+        sch.vectorize(loop=l39)
+        sch.vectorize(loop=l12)
+        b40 = sch.decompose_reduction(block=b1, loop=l16)
+        b41 = sch.get_block(name="compute", func_name="main")
+        sch.reverse_compute_inline(block=b41)
+        sch.enter_postproc()
+        sch.unannotate(block_or_loop=b22, ann_key="meta_schedule.cooperative_fetch")
+        l42, l43, l44, l45, l46 = sch.get_loops(block=b22)
+        l47, l48, l49 = sch.split(
+            loop=l46, factors=[None, 100, 2], preserve_unit_iters=True
+        )
+        sch.vectorize(loop=l49)
+        sch.bind(loop=l48, thread_axis="threadIdx.x")
+        return sch.mod["main"].with_attr("tir.is_scheduled", 1)
+    return sch_fused_decode9_fused_matmul6_cast2
+
 
 @T.prim_func
 def rms_norm1(A: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), B: T.Buffer((T.int64(4096),), "float16"), rms_norm: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16")):
@@ -3298,6 +3303,92 @@ def rms_norm1_opt(A: T.Buffer((1, 1, 4096), "float16"), B: T.Buffer((4096,), "fl
                     T.writes(rms_norm[v_bsz, v_i, v_k])
                     rms_norm[v_bsz, v_i, v_k] = T.Cast("float16", T.Cast("float32", B[v_k]) * (T.Cast("float32", A[v_bsz, v_i, v_k]) / T.sqrt(Ared_temp_shared[v_bsz, v_i] * T.float32(0.000244140625) + T.float32(9.9999999999999995e-07))))
 
+def get_lm_head_func(padded_vocab_size, vocab_size):
+    @T.prim_func
+    def fused_fused_decode6_fused_matmul4_set_padding_value(lv1803: T.Buffer((T.int64(512), T.int64(padded_vocab_size)), "uint32"), lv1804: T.Buffer((T.int64(128), T.int64(padded_vocab_size)), "float16"), lv3152: T.Buffer((T.int64(1), T.int64(1), T.int64(4096)), "float16"), p_output0_intermediate: T.Buffer((T.int64(1), T.int64(1), T.int64(padded_vocab_size)), "float32")):
+        T.func_attr({"tir.noalias": T.bool(True)})
+        # with T.block("root"):
+        p_output0_intermediate_1 = T.alloc_buffer((T.int64(4096), T.int64(padded_vocab_size)), "float16")
+        var_matmul_intermediate = T.alloc_buffer((T.int64(1), T.int64(1), T.int64(padded_vocab_size)), "float16")
+        for i, j in T.grid(T.int64(4096), T.int64(padded_vocab_size)):
+            with T.block("decode"):
+                v_i, v_j = T.axis.remap("SS", [i, j])
+                T.reads(lv1803[v_i // T.int64(8), v_j], lv1804[v_i // T.int64(32), v_j])
+                T.writes(p_output0_intermediate_1[v_i, v_j])
+                p_output0_intermediate_1[v_i, v_j] = (T.Cast("float16", T.bitwise_and(T.shift_right(lv1803[v_i // T.int64(8), v_j], T.Cast("uint32", v_i % T.int64(8)) * T.uint32(4)), T.uint32(15))) - T.float16(7)) * lv1804[v_i // T.int64(32), v_j]
+        for i0, i1, i2, k in T.grid(T.int64(1), T.int64(1), T.int64(padded_vocab_size), T.int64(4096)):
+            with T.block("matmul"):
+                v_i0, v_i1, v_i2, v_k = T.axis.remap("SSSR", [i0, i1, i2, k])
+                T.reads(lv3152[v_i0, v_i1, v_k], p_output0_intermediate_1[v_k, v_i2])
+                T.writes(var_matmul_intermediate[v_i0, v_i1, v_i2])
+                with T.init():
+                    var_matmul_intermediate[v_i0, v_i1, v_i2] = T.float16(0)
+                var_matmul_intermediate[v_i0, v_i1, v_i2] = var_matmul_intermediate[v_i0, v_i1, v_i2] + lv3152[v_i0, v_i1, v_k] * p_output0_intermediate_1[v_k, v_i2]
+        for i, j, k in T.grid(T.int64(1), T.int64(1), T.int64(padded_vocab_size)):
+            with T.block("set_padding_value"):
+                v_i, v_j, v_k = T.axis.remap("SSS", [i, j, k])
+                T.reads(var_matmul_intermediate[v_i, v_j, v_k])
+                T.writes(p_output0_intermediate[v_i, v_j, v_k])
+                p_output0_intermediate[v_i, v_j, v_k] = T.if_then_else(v_k < T.int64(vocab_size), T.Cast("float32", var_matmul_intermediate[v_i, v_j, v_k]), T.float32(-65504))
+    return fused_fused_decode6_fused_matmul4_set_padding_value
+
+def get_lm_head_sch_func(padded_vocab_size):
+    def sch_fused_fused_decode6_fused_matmul4_set_padding_value(func):
+        sch = tvm.tir.Schedule(func)
+        b0 = sch.get_block(name="decode", func_name="main")
+        b1 = sch.get_block(name="matmul", func_name="main")
+        l2, l3, l4, l5 = sch.get_loops(block=b1)
+        l6 = sch.fuse(l2, l3, l4, preserve_unit_iters=True)
+        assert padded_vocab_size % 400 == 0, f"vocab size must be a multiple of 400, now is {padded_vocab_size}"
+        v7, v8, v9 = sch.sample_perfect_tile(
+            loop=l6, n=3, max_innermost_factor=4, decision=[padded_vocab_size//400, 100, 4]
+        )
+        l10, l11, l12 = sch.split(loop=l6, factors=[v7, v8, v9], preserve_unit_iters=True)
+        v13, v14, v15 = sch.sample_perfect_tile(
+            loop=l5, n=3, max_innermost_factor=8, decision=[512, 8, 1]
+        )
+        l16, l17, l18 = sch.split(
+            loop=l5, factors=[v13, v14, v15], preserve_unit_iters=True
+        )
+        sch.reorder(l10, l11, l16, l17, l18, l12)
+        sch.bind(loop=l10, thread_axis="blockIdx.x")
+        sch.bind(loop=l11, thread_axis="threadIdx.x")
+        sch.compute_inline(block=b0)
+        b19 = sch.cache_write(block=b1, write_buffer_index=0, storage_scope="local")
+        sch.reverse_compute_at(block=b19, loop=l11, preserve_unit_loops=True, index=-1)
+        b20 = sch.cache_read(block=b1, read_buffer_index=1, storage_scope="local")
+        b21 = sch.cache_read(block=b1, read_buffer_index=2, storage_scope="local")
+        b22 = sch.cache_read(block=b1, read_buffer_index=0, storage_scope="shared")
+        sch.compute_at(block=b22, loop=l11, preserve_unit_loops=True, index=-1)
+        v23 = sch.sample_categorical(
+            candidates=[1, 2, 4, 8], probs=[0.25, 0.25, 0.25, 0.25], decision=1
+        )
+        sch.annotate(
+            block_or_loop=b22, ann_key="meta_schedule.cooperative_fetch", ann_val=v23
+        )
+        sch.compute_at(block=b20, loop=l17, preserve_unit_loops=True, index=-1)
+        sch.compute_at(block=b21, loop=l16, preserve_unit_loops=True, index=-1)
+        l24, l25, l26, l27, l28, l29 = sch.get_loops(block=b20)
+        sch.vectorize(loop=l29)
+        l30, l31, l32, l33, l34 = sch.get_loops(block=b21)
+        sch.vectorize(loop=l34)
+        l35, l36, l37, l38, l39 = sch.get_loops(block=b19)
+        sch.vectorize(loop=l39)
+        sch.vectorize(loop=l12)
+        b40 = sch.decompose_reduction(block=b1, loop=l16)
+        b41 = sch.get_block(name="set_padding_value", func_name="main")
+        sch.reverse_compute_inline(block=b41)
+        sch.enter_postproc()
+        sch.unannotate(block_or_loop=b22, ann_key="meta_schedule.cooperative_fetch")
+        l42, l43, l44, l45, l46 = sch.get_loops(block=b22)
+        l47, l48, l49 = sch.split(
+            loop=l46, factors=[None, 100, 2], preserve_unit_iters=True
+        )
+        sch.vectorize(loop=l49)
+        sch.bind(loop=l48, thread_axis="threadIdx.x")
+        return sch.mod["main"].with_attr("tir.is_scheduled", 1)
+    return sch_fused_fused_decode6_fused_matmul4_set_padding_value
+
 def get_dict_key(func):
     return tvm.ir.structural_hash(func), func
 
@@ -3339,10 +3430,9 @@ tir_dispatch_dict = {
     get_dict_key(fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5): fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_after,
     get_dict_key(fused_decode1_fused_NT_matmul1_add4_add5): fused_decode1_fused_NT_matmul1_add4_add5_after,
     get_dict_key(fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_cast7): fused_decode3_fused_NT_matmul4_add7_cast8_cast12_add5_cast7_after,
-    get_dict_key(fused_decode9_fused_matmul6_cast2): sch_fused_decode9_fused_matmul6_cast2(fused_decode9_fused_matmul6_cast2),
+    # get_dict_key(fused_decode9_fused_matmul6_cast2): sch_fused_decode9_fused_matmul6_cast2(fused_decode9_fused_matmul6_cast2),
     get_dict_key(rms_norm1): rms_norm1_opt
 }
-
 
 def lookup_func(func):
     for (hash_value, func_before), f_after in tir_dispatch_dict.items():
@@ -3355,6 +3445,15 @@ def lookup_func(func):
 
 @tvm.transform.module_pass(opt_level=0, name="DispatchTIROperatorAdreno")
 class DispatchTIROperatorAdreno:
+    def __init__(self, vocab_size):
+        self.vocab_size = vocab_size
+        self.padded_vocab_size = int((vocab_size + 399) // 400) * 400
+        if self.padded_vocab_size > self.vocab_size:
+            # 如果扩充了vocab_size会调用这个
+            tir_dispatch_dict[get_dict_key(get_lm_head_func(self.padded_vocab_size, self.vocab_size))] = get_lm_head_sch_func(self.padded_vocab_size)(get_lm_head_func(self.padded_vocab_size, self.vocab_size))
+        else:
+            # 如果原始vocab_size就是400的倍数, 会调用这个
+            tir_dispatch_dict[get_dict_key(get_lm_head_source_func(self.vocab_size))] = get_lm_head_sch_source_func(self.vocab_size)(get_lm_head_source_func(self.vocab_size))
     def transform_module(
         self, mod: IRModule, ctx: tvm.transform.PassContext
     ) -> IRModule:
@@ -3366,5 +3465,4 @@ class DispatchTIROperatorAdreno:
             if scheduled_func is not None:
                 print(f"AdrenoDispatcher: {gv} was replaced")
                 mod[gv] = scheduled_func
-
         return mod

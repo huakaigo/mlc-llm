@@ -392,13 +392,12 @@ def dump_default_mlc_chat_config(args: argparse.Namespace):
     print(f"Finish exporting chat config to {args.chat_config_path}")
 
 
-def build(mod_deploy: tvm.IRModule, args: argparse.Namespace) -> None:
+def build(mod_deploy: tvm.IRModule, args: argparse.Namespace, config) -> None:
     target_kind = args.target_kind
     if args.system_lib_prefix:
         mod_deploy = mod_deploy.with_attrs(
             {"system_lib_prefix": args.system_lib_prefix}
         )
-
     debug_dump_script(mod_deploy, "mod_before_build.py", args)
     if target_kind != "cpu":
         db = utils.get_database(args.db_path)  # pylint: disable=invalid-name
@@ -411,7 +410,7 @@ def build(mod_deploy: tvm.IRModule, args: argparse.Namespace) -> None:
             # mod_deploy = relax.transform.MetaScheduleApplyDatabase()(mod_deploy)
             if args.target_kind == "android":
                 debug_dump_script(mod_deploy, "mod.before.lookup.py", args)
-                mod_deploy = mlc_llm.dispatch.DispatchTIROperatorAdreno()(  # pylint: disable=not-callable
+                mod_deploy = mlc_llm.dispatch.DispatchTIROperatorAdreno(config["vocab_size"])(  # pylint: disable=not-callable
                     mod_deploy
                 )
             debug_dump_script(mod_deploy, "mod.after.lookup.py", args)
@@ -456,6 +455,7 @@ def build_model_from_args(args: argparse.Namespace):
             os.path.join(args.model_path, "config.json"), encoding="utf-8"
         ) as i_f:
             config = json.load(i_f)
+        assert "vocab_size" in config, "no vocab_size section found in config.json"
     if not use_cache:
         if args.model_category == "llama":
             mod, param_manager, params = llama.get_model(args, config)
@@ -488,7 +488,7 @@ def build_model_from_args(args: argparse.Namespace):
             mod = pickle.load(pkl)
     dump_split_tir(mod, args)
     if not args.reuse_lib:
-        build(mod, args)
+        build(mod, args, config)
     else:
         print("Reuse existing prebuilt lib {ARGS.reuse_lib}...")
     dump_default_mlc_chat_config(args)

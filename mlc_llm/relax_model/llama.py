@@ -40,7 +40,7 @@ class LlamaConfig:
         self.dtype = dtype
         self.max_sequence_length = max_sequence_length
         self.vocab_size = vocab_size
-        self.fake_vocab_size = vocab_size#50000
+        self.padded_vocab_size = int((vocab_size + 399) // 400) * 400#adjust to multiple of 400 for the optimized kernel
         self.hidden_size = hidden_size
         self.intermediate_size = intermediate_size
         self.num_hidden_layers = num_hidden_layers
@@ -607,7 +607,7 @@ class LlamaForCausalLM(nn.Module):
         self.config = config
         self.model = LlamaModel(config, sep_embed)
         self.lm_head = Linear(
-            config.hidden_size, config.fake_vocab_size, dtype=config.dtype, bias=False
+            config.hidden_size, config.padded_vocab_size, dtype=config.dtype, bias=False
         )
 
         ############ Rotary embedding constants ############
@@ -648,8 +648,18 @@ class LlamaForCausalLM(nn.Module):
         logits = self.lm_head(
             nn.emit_te(te_slicing, hidden_states, primfunc_name_hint="slice")
         )
+        def te_invalid_padding_value(x: te.Tensor):
+            shape = [x.value for x in logits.struct_info.shape.values]
+            return te.compute(
+                shape=shape,
+                fcompute = lambda i,j,k: te.if_then_else(k < self.config.vocab_size, x[i,j,k], tvm.tir.min_value(logits.struct_info.dtype).value),
+                name = "set_padding_value"
+            )
+        if self.config.padded_vocab_size > self.config.vocab_size:
+            logits = nn.emit_te(te_invalid_padding_value, logits, primfunc_name_hint="set_padding_value")
         if logits.struct_info.dtype != "float32":
             logits = nn.emit(relax.op.astype(logits, "float32"))
+
 
         return logits, key_value_cache
 
@@ -826,15 +836,10 @@ def create_kv_cache_func(bb: relax.BlockBuilder, config: LlamaConfig) -> None:
 def create_softmax_func(bb: relax.BlockBuilder, config: LlamaConfig) -> None:
     with bb.function("softmax_with_temperature"):
         logits = nn.Placeholder(
-            (1, 1, config.fake_vocab_size), dtype="float32", name="logits"
+            (1, 1, config.padded_vocab_size), dtype="float32", name="logits"
         )
-        print(f"=====logits.shape = {logits.struct_info.shape}")
         temperature = nn.Placeholder((), dtype="float32", name="temperature")
         with bb.dataflow():
-            # assert config.fake_vocab_size >= config.vocab_size 
-            # if config.fake_vocab_size > config.vocab_size:
-            #     logits = nn.emit(relax.op.strided_slice(logits, [len(logits.struct_info.shape) - 1], begin = [tvm.tir.IntImm("int64", 0)], end = [tvm.tir.IntImm("int64", config.vocab_size)]))
-            #     print(logits.struct_info.shape)
             div = bb.emit(relax.op.divide(logits, temperature))
             softmax = bb.emit(relax.op.nn.softmax(div, axis=-1))
             gv = bb.emit_output(softmax)
@@ -904,12 +909,11 @@ def get_model(args, hf_config):
             return [pname]
 
     def f_convert_param_bkwd(torch_pname: str, torch_param):
-        print(f"===== {torch_pname}")
-        if "lm_head" in torch_pname and config.fake_vocab_size > config.vocab_size:
+        if "lm_head" in torch_pname and config.padded_vocab_size > config.vocab_size:
             import numpy as np
-            print(f"LM_HEAD: before padding param.shape: {torch_param.shape}")
-            torch_param = np.pad(torch_param,((0, config.fake_vocab_size - config.vocab_size), (0, 0)), mode='constant', constant_values=0)
-            print(f"LM_HEAD: after padding param.shape: {torch_param.shape}")
+            print(f"{torch_pname}: before padding param.shape: {torch_param.shape}")
+            torch_param = np.pad(torch_param,((0, config.padded_vocab_size - config.vocab_size), (0, 0)), mode='constant', constant_values=0)
+            print(f"{torch_pname}: after padding param.shape: {torch_param.shape}")
             return [(torch_pname, torch_param.astype(dtype))]
         if not config.combine_matmul:
             return [(torch_pname, torch_param.astype(dtype))]
