@@ -93,7 +93,7 @@ def debug_dump_script(mod, name, args: argparse.Namespace, show_meta=True):
         return
     dump_path = os.path.join(args.artifact_path, "debug", name)
     with open(dump_path, "w", encoding="utf-8") as outfile:
-        outfile.write(mod.script(show_meta=show_meta))
+        outfile.write(mod.script())#show_meta=show_meta
     print(f"Dump mod to {dump_path}")
 
 

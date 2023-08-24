@@ -458,15 +458,15 @@ def dump_mlc_chat_config(
     print(f"Finish exporting chat config to {args.chat_config_path}")
 
 
-def build(mod_deploy: tvm.IRModule, args: argparse.Namespace) -> None:
+def build(mod_deploy: tvm.IRModule, args: argparse.Namespace, config) -> None:
     target_kind = args.target_kind
     if args.system_lib_prefix:
         mod_deploy = mod_deploy.with_attrs({"system_lib_prefix": args.system_lib_prefix})
 
     utils.debug_dump_script(mod_deploy, "mod_before_build.py", args)
-    utils.debug_dump_benchmark_script(
-        mod_deploy, f"{args.model}_{args.quantization.name}".replace("-", "_"), args
-    )
+    # utils.debug_dump_benchmark_script(
+    #     mod_deploy, f"{args.model}_{args.quantization.name}".replace("-", "_"), args
+    # )
 
     if target_kind != "cpu":
         dispatch_target = (
@@ -476,10 +476,8 @@ def build(mod_deploy: tvm.IRModule, args: argparse.Namespace) -> None:
         )
         with dispatch_target:
             if args.target_kind == "android":
-                mod_deploy = (
-                    mlc_llm.dispatch.DispatchTIROperatorAdreno()(  # pylint: disable=not-callable
-                        mod_deploy
-                    )
+                mod_deploy = mlc_llm.dispatch.DispatchTIROperatorAdreno(config["vocab_size"])(  # pylint: disable=not-callable
+                    mod_deploy
                 )
             mod_deploy = dl.ApplyDefaultSchedule(  # pylint: disable=not-callable
                 dl.gpu.Matmul(),
@@ -534,6 +532,7 @@ def build_model_from_args(args: argparse.Namespace):
         with open(os.path.join(args.model_path, "config.json"), encoding="utf-8") as i_f:
             config = json.load(i_f)
     if not use_cache or args.convert_weight_only:
+        assert "vocab_size" in config, "no vocab_size section found in config.json"
         if args.model_category == "llama":
             mod, param_manager, params = llama.get_model(args, config)
         elif args.model_category == "gpt_neox":
@@ -581,7 +580,7 @@ def build_model_from_args(args: argparse.Namespace):
         with open(cache_path, "rb") as pkl:
             mod = pickle.load(pkl)
     if not args.reuse_lib:
-        build(mod, args)
+        build(mod, args, config)
     else:
         print(f"Reuse existing prebuilt lib {args.reuse_lib}...")
 
