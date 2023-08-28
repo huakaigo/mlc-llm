@@ -155,8 +155,6 @@ def fused_decode6_fused_matmul7_add1(
                 + var_matmul_intermediate[v_ax0, v_ax1, v_ax2]
             )
 
-
-
 def sch_fused_decode6_fused_matmul7_add1(func):
     sch = tvm.tir.Schedule(func)
     b0 = sch.get_block(name="decode", func_name="main")
@@ -262,7 +260,7 @@ def sch_manual_fused_decode6_fused_matmul7_add1(func):
     sch.unannotate(block_or_loop=b20, ann_key="meta_schedule.cooperative_fetch")
     lb20l1, lb20l2, lb20l3, lb20l4, lb20l5, lb20l6 = sch.get_loops(block=b20)
     l34, l35, l36, l37 = sch.split(
-        loop=lb20l6, factors=[None, 128, 8, 4], preserve_unit_iters=True
+        loop=lb20l6, factors=[None, 256, 8, 4], preserve_unit_iters=True
     )
     sch.vectorize(loop=l37)
     sch.bind(loop=l35, thread_axis="threadIdx.x")
@@ -3467,13 +3465,10 @@ tir_dispatch_dict = {
     get_dict_key(fused_gate_up_decode5_fused_matmul6): sch_manul_fused_gate_up_decode5_fused_matmul6(
         fused_gate_up_decode5_fused_matmul6
     ),
+    ## MLP down kernel
     get_dict_key(
         fused_decode6_fused_matmul7_add1
-    ): sch_fused_decode6_fused_matmul7_add1(fused_decode6_fused_matmul7_add1),
-    ## MLP down kernel
-    # get_dict_key(
-    #     fused_decode6_fused_matmul7_add1
-    # ): sch_manual_fused_decode6_fused_matmul7_add1(fused_decode6_fused_matmul7_add1),
+    ): sch_manual_fused_decode6_fused_matmul7_add1(fused_decode6_fused_matmul7_add1),
     get_dict_key(
         fused_decode6_fused_matmul7_add1
     ): sch_fused_decode6_fused_matmul7_add1(fused_decode6_fused_matmul7_add1),
