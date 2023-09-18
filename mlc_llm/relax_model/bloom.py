@@ -2,6 +2,8 @@ import math
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+from ...3rdparty.tvm.python.tvm.relax.backend.contrib.cutlass import attention_rewrite_patterns
+
 import numpy as np
 import tvm
 from tvm import relax, te
@@ -372,6 +374,7 @@ class BloomAttention(nn.Module):
     def forward(
         self,
         hidden_states: relax.Expr,
+        residual: relax.Expr,
         all_seq_len_shape: relax.Expr,
         past_key_value: Tuple[relax.Expr],
         alibi: relax.Expr,
@@ -507,6 +510,8 @@ class BloomAttention(nn.Module):
         attn_output = reshape(attn_output, (bsz, q_len, self.hidden_size))
 
         attn_output = self.dense(attn_output)
+        # residual
+        attn_output = nn.emit(attn_output + residual)
         return attn_output, ((None, None) if past_key_value is None else past_key_value)
 
 
@@ -545,9 +550,10 @@ class BloomBlock(nn.Module):
         else:
             residual = hidden_states
 
-        # Self Attention
+        # Self Attention & input residual
         hidden_states, present_key_value = self.self_attention(
             hidden_states=layernorm_output,
+            residual=residual,
             past_key_value=past_key_value,
             alibi=alibi,
             attention_mask=attention_mask,
