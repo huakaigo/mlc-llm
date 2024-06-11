@@ -1,0 +1,25 @@
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode2_NT_matmul") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_matmul4") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode4_fused_NT_matmul3_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul2_silu") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode6_fused_matmul1_cast2") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_fused_matmul4_add1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode8_fused_matmul6_silu1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul2_multiply") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode2_fused_NT_matmul_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode8_fused_matmul6_multiply1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode9_fused_matmul7_add1") was replaced
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod.after.lookup.py
+- Dispatch to pre-scheduled op: fused_NT_matmul1_divide_maximum_minimum_cast
+- Dispatch to pre-scheduled op: fused_softmax_cast1
+- Dispatch to pre-scheduled op: fused_NT_matmul4_divide2_maximum1_minimum1_cast3
+- Dispatch to pre-scheduled op: matmul
+- Dispatch to pre-scheduled op: fused_softmax2_cast4
+- Dispatch to pre-scheduled op: matmul5
+- Dispatch to pre-scheduled op: fused_min_max_triu_te_broadcast_to
+- Dispatch to pre-scheduled op: rms_norm
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod_build_stage.py
+opencl -keys=opencl,gpu -max_num_threads=256 -max_shared_memory_per_block=16384 -max_threads_per_block=256 -texture_spatial_limit=16384 -thread_warp_size=1
+Dump shader to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/llama2_7b_chat_watermark_split_q4f16_0_android.cl
+Finish exporting to dist/llama2_7b_chat_watermark_split-q4f16_0/llama2_7b_chat_watermark_split-q4f16_0-android.so
+Finish exporting chat config to dist/llama2_7b_chat_watermark_split-q4f16_0/params/mlc-chat-config.json

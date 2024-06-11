@@ -1,0 +1,29 @@
+经对比，算子替换部分没区别
+
+Using path "../../base_model/llama2_7b_chat_watermark" for model "llama2_7b_chat_watermark"
+Database paths: ['log_db/redpajama-3b-q4f32', 'log_db/vicuna-v1-7b', 'log_db/rwkv-raven-7b', 'log_db/dolly-v2-3b', 'log_db/redpajama-3b-q4f16', 'log_db/rwkv-raven-3b', 'log_db/rwkv-raven-1b5']
+Target configured: opencl -keys=opencl,gpu -max_num_threads=256 -max_shared_memory_per_block=16384 -max_threads_per_block=256 -texture_spatial_limit=16384 -thread_warp_size=1
+Load cached module from dist/llama2_7b_chat_watermark-q4f16_0/mod_cache_before_build_android.pkl and skip tracing. You can use --use-cache=0 to retrace
+Dump static shape TIR to dist/llama2_7b_chat_watermark-q4f16_0/debug/mod_tir_static.py
+Dump dynamic shape TIR to dist/llama2_7b_chat_watermark-q4f16_0/debug/mod_tir_dynamic.py
+Dump mod to dist/llama2_7b_chat_watermark-q4f16_0/debug/mod_before_build.py
+Dump mod to dist/llama2_7b_chat_watermark-q4f16_0/debug/mod.before.lookup.py
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_fused_matmul1_cast2") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul2_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode5_fused_NT_matmul4_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode11_fused_matmul12_add1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode9_fused_matmul10_add1") was replaced
+Dump mod to dist/llama2_7b_chat_watermark-q4f16_0/debug/mod.after.lookup.py
+- Dispatch to pre-scheduled op: fused_min_max_triu_te_broadcast_to
+- Dispatch to pre-scheduled op: fused_softmax1_cast4
+- Dispatch to pre-scheduled op: matmul9
+- Dispatch to pre-scheduled op: fused_NT_matmul1_divide_maximum_minimum_cast
+- Dispatch to pre-scheduled op: fused_softmax_cast1
+- Dispatch to pre-scheduled op: rms_norm
+- Dispatch to pre-scheduled op: fused_NT_matmul5_divide1_maximum1_minimum1_cast3
+- Dispatch to pre-scheduled op: matmul
+Dump mod to dist/llama2_7b_chat_watermark-q4f16_0/debug/mod_build_stage.py
+opencl -keys=opencl,gpu -max_num_threads=256 -max_shared_memory_per_block=16384 -max_threads_per_block=256 -texture_spatial_limit=16384 -thread_warp_size=1
+Dump shader to dist/llama2_7b_chat_watermark-q4f16_0/debug/llama2_7b_chat_watermark_q4f16_0_android.cl
+Finish exporting to dist/llama2_7b_chat_watermark-q4f16_0/llama2_7b_chat_watermark-q4f16_0-android.so
+Finish exporting chat config to dist/llama2_7b_chat_watermark-q4f16_0/params/mlc-chat-config.json

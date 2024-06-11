@@ -1,0 +1,1 @@
+python e2e_auto_tir.py --workload resnet_18 --input-shape [1,3,224,224] --target "opencl" --rpc-host 10.4.236.32 --rpc-port 9190 --rpc-key android --num-trials 10 --results-file ./log --work-dir ./wksp

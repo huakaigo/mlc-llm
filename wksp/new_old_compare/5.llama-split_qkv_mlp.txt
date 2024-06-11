@@ -1,0 +1,22 @@
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode2_fused_NT_matmul1_add1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode9_fused_matmul4_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode6_fused_matmul5_cast2") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode8_fused_matmul3_silu") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode2_NT_matmul1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode4_fused_NT_matmul4_add1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul3_silu1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_matmul1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul3_multiply1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_fused_matmul1_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode8_fused_matmul3_multiply") was replaced
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod.after.lookup.py
+- Dispatch to pre-scheduled op: fused_softmax1_cast4
+- Dispatch to pre-scheduled op: fused_NT_matmul_divide_maximum_minimum_cast
+- Dispatch to pre-scheduled op: fused_NT_matmul2_divide1_maximum1_minimum1_cast3
+- Dispatch to pre-scheduled op: fused_softmax_cast1
+- Dispatch to pre-scheduled op: fused_min_max_triu_te_broadcast_to
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod_build_stage.py
+opencl -keys=opencl,gpu -max_num_threads=256 -max_shared_memory_per_block=16384 -max_threads_per_block=256 -texture_spatial_limit=16384 -thread_warp_size=1
+Dump shader to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/llama2_7b_chat_watermark_split_q4f16_0_android.cl
+Finish exporting to dist/llama2_7b_chat_watermark_split-q4f16_0/llama2_7b_chat_watermark_split-q4f16_0-android.so
+Finish exporting chat config to dist/llama2_7b_chat_watermark_split-q4f16_0/params/mlc-chat-config.json

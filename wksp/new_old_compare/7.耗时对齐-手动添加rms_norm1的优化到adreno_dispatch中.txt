@@ -1,0 +1,78 @@
+I.GlobalVar("fused_transpose3_reshape4")
+I.GlobalVar("rms_norm")
+I.GlobalVar("full")
+I.GlobalVar("fused_fused_decode3_fused_NT_matmul3_multiply1")
+I.GlobalVar("fused_NT_matmul2_divide2_maximum1_minimum1_cast3")
+I.GlobalVar("fused_fused_decode7_fused_matmul3_multiply")
+I.GlobalVar("reshape2")
+I.GlobalVar("fused_fused_decode6_fused_matmul1_add")
+I.GlobalVar("fused_fused_decode6_matmul1")
+I.GlobalVar("transpose2")
+I.GlobalVar("reshape")
+I.GlobalVar("transpose6")
+I.GlobalVar("fused_fused_decode9_fused_matmul5_cast2")
+I.GlobalVar("fused_min_max_triu_te_broadcast_to")
+I.GlobalVar("fused_fused_decode1_take")
+I.GlobalVar("divide1")
+I.GlobalVar("fused_fused_decode2_NT_matmul1")
+I.GlobalVar("matmul8")
+I.GlobalVar("slice1")
+I.GlobalVar("fused_fused_decode3_fused_NT_matmul3_silu1")
+I.GlobalVar("reshape8")
+I.GlobalVar("transpose1")
+I.GlobalVar("fused_reshape2_squeeze")
+I.GlobalVar("rotary_embedding1")
+I.GlobalVar("fused_fused_decode7_fused_matmul3_silu")
+I.GlobalVar("reshape1")
+I.GlobalVar("reshape5")
+I.GlobalVar("decode")
+I.GlobalVar("fused_softmax_cast1")
+I.GlobalVar("fused_NT_matmul_divide_maximum_minimum_cast")
+I.GlobalVar("fused_fused_decode8_fused_matmul4_add")
+I.GlobalVar("softmax1")
+I.GlobalVar("reshape6")
+I.GlobalVar("squeeze")
+I.GlobalVar("fused_fused_decode2_fused_NT_matmul1_add1")
+I.GlobalVar("get_metadata")
+I.GlobalVar("extend_te")
+I.GlobalVar("rotary_embedding")
+I.GlobalVar("fused_fused_decode4_fused_NT_matmul4_add1")
+I.GlobalVar("create_kv_cache")
+I.GlobalVar("reshape3")
+I.GlobalVar("slice")
+I.GlobalVar("reshape7")
+I.GlobalVar("rms_norm1")
+I.GlobalVar("matmul2")
+I.GlobalVar("fused_softmax2_cast4")
+I.GlobalVar("fused_fused_decode1_take1")
+I.GlobalVar("squeeze1")
+I.GlobalVar("softmax_with_temperature")
+I.GlobalVar("prefill")
+================================================
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul3_multiply1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_fused_matmul3_multiply") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode6_fused_matmul1_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode6_matmul1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode9_fused_matmul5_cast2") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode2_NT_matmul1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode3_fused_NT_matmul3_silu1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode7_fused_matmul3_silu") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode8_fused_matmul4_add") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode2_fused_NT_matmul1_add1") was replaced
+AdrenoDispatcher: I.GlobalVar("fused_fused_decode4_fused_NT_matmul4_add1") was replaced
+AdrenoDispatcher: I.GlobalVar("rms_norm1") was replaced
+- Dispatch to pre-scheduled op: rms_norm
+- Dispatch to pre-scheduled op: fused_NT_matmul2_divide2_maximum1_minimum1_cast3
+- Dispatch to pre-scheduled op: fused_min_max_triu_te_broadcast_to
+- Dispatch to pre-scheduled op: matmul8
+- Dispatch to pre-scheduled op: fused_softmax_cast1
+- Dispatch to pre-scheduled op: fused_NT_matmul_divide_maximum_minimum_cast
+- Dispatch to pre-scheduled op: matmul2
+- Dispatch to pre-scheduled op: fused_softmax2_cast4
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod.after.lookup.py
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod.after.dl.DefaultSchedule.py
+Dump mod to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/mod_build_stage.py
+opencl -keys=opencl,gpu -max_num_threads=256 -max_shared_memory_per_block=16384 -max_threads_per_block=256 -texture_spatial_limit=16384 -thread_warp_size=1
+Dump shader to dist/llama2_7b_chat_watermark_split-q4f16_0/debug/llama2_7b_chat_watermark_split_q4f16_0_android.cl
+Finish exporting to dist/llama2_7b_chat_watermark_split-q4f16_0/llama2_7b_chat_watermark_split-q4f16_0-android.so
+Finish exporting chat config to dist/llama2_7b_chat_watermark_split-q4f16_0/params/mlc-chat-config.json
